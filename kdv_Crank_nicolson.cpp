@@ -8,6 +8,7 @@
 #include <Eigen/StdVector>
 #include <Eigen/Dense>
 #include<Eigen/IterativeLinearSolvers>
+#define EIGEN_MPL2_ONLY
 using Eigen::VectorXd;
 // config tá ok
 const int space_steps = 2001;                             // número de passos no espaço
@@ -178,7 +179,7 @@ void calcula_funcao_avaliada_chute(VectorXd& valor_variaveis_t_mais_1, VectorXd&
     vetor_resultado[m] *= -1.0;
 }
 // Rodando o programa
-void roda_simulacao_crank_nicholson(){
+void roda_simulacao_crank_nicolson(){
     // Abrindo arquivos para leitura e escrita
     std::string nome_arquivo_plot = "kdv_data.txt";
     std::string nome_arquivo_condicoes_iniciais = "ic_data.txt";
@@ -262,6 +263,6 @@ void cria_arquivo_massa(){
     kdv_data.close();
 }
 int main(){
-    roda_simulacao_crank_nicholson();
+    roda_simulacao_crank_nicolson();
     cria_arquivo_massa();
 }
