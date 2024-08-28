@@ -6,8 +6,8 @@ x_axis = np.linspace(-100, 0, 2000)
 massa_eixo = np.linspace(-100, 0, 1000)
 u_axis = []
 mass = []
-m = open('mass_data.txt', 'r')
-mass_data = m.readlines()[0:1000]
+#m = open('mass_data.txt', 'r')
+#mass_data = m.readlines()[0:1000]
 # for k in range(1000):
 #     mass.append(float(mass_data[k]))
 a = 0
@@ -27,11 +27,11 @@ for i in range(1000):
     for j in range(2000):
         u_axis.append(float(aux[j]))
 
-    for k in range(1000):
-        aux_mass.append(float(mass_data[i]))
-        k = k+1
+    #for k in range(1000):
+    #    aux_mass.append(float(mass_data[i]))
+    #    k = k+1
 
-    plt.plot(massa_eixo, aux_mass)
+    #plt.plot(massa_eixo, aux_mass)
     plt.plot(x_axis, u_axis)
     plt.savefig(f'images_kdv/{i:00003}', dpi=100, facecolor='white')
     plt.close()

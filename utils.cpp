@@ -10,5 +10,5 @@ double valor_max_vetor(VectorXd& vec, int tam){
     for (int i = 0; i < tam; i++){
         if (abs(vec[i]) > max) max = abs(vec[i]);
     }
-    return abs(max);
+    return max;
 }

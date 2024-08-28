@@ -7,6 +7,8 @@
         "hash_map": "cpp",
         "alignedvector3": "cpp",
         "cmath": "cpp",
-        "complex": "cpp"
+        "complex": "cpp",
+        "iostream": "cpp",
+        "iosfwd": "cpp"
     }
 }
