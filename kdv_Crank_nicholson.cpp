@@ -65,7 +65,7 @@ void linear_combination(double alpha, double *v1, double beta, double *v2, doubl
     }
 }
 // Norma L2 da função
-double mass_conservation(double *x)
+double mass_conservation(VectorXd& x)
 {
     // Queremos calcular a raiz quadrada da integral de f(x)², no devido intervalo de integração
     // Usando f(x)² = x[i]² = g(x) e aplicando o método dos trapezios
@@ -149,9 +149,12 @@ void calcula_funcao_avaliada_chute(VectorXd& valor_variaveis_t_mais_1, VectorXd&
     vetor_resultado[m] += (1/(4*pow(dx, 3)))*(valor_variaveis_t_mais_1[m+2]+valor_variaveis_t[m+2]-2*(valor_variaveis_t_mais_1[m+1]+valor_variaveis_t[m+1]));
     vetor_resultado[m] *= -1.0;
     m = 1;
+    // u_t
     vetor_resultado[m] = ((valor_variaveis_t_mais_1[m]-valor_variaveis_t[m])/dt);
+    // u*u_x
     vetor_resultado[m] += (1/(4*dx))*(valor_variaveis_t_mais_1[m+1] + valor_variaveis_t[m+1] + valor_variaveis_t_mais_1[m] + valor_variaveis_t[m]+valor_variaveis_t_mais_1[m-1]+valor_variaveis_t[m-1])
                         * (valor_variaveis_t_mais_1[m+1]+valor_variaveis_t[m+1]-valor_variaveis_t_mais_1[m-1]-valor_variaveis_t[m-1]);
+    // u_xxx
     vetor_resultado[m] += (1/(4*pow(dx, 3)))*(valor_variaveis_t_mais_1[m+2]+valor_variaveis_t[m+2]-2*(valor_variaveis_t_mais_1[m+1]+valor_variaveis_t[m+1])+2*(valor_variaveis_t_mais_1[m-1]+valor_variaveis_t[m-1]));
     vetor_resultado[m] *= -1.0;
     for (m = 2; m < space_steps-2; m++){
@@ -174,14 +177,17 @@ void calcula_funcao_avaliada_chute(VectorXd& valor_variaveis_t_mais_1, VectorXd&
     vetor_resultado[m] += (1/(4*pow(dx, 3)))*(2*(valor_variaveis_t_mais_1[m-1]+valor_variaveis_t[m-1])-valor_variaveis_t_mais_1[m-2]-valor_variaveis_t[m-2]);
     vetor_resultado[m] *= -1.0;
 }
-int main(){
+// Rodando o programa
+void roda_simulacao_crank_nicholson(){
+    // Abrindo arquivos para leitura e escrita
     std::string nome_arquivo_plot = "kdv_data.txt";
+    std::string nome_arquivo_condicoes_iniciais = "ic_data.txt";
     std::fstream file_kdv_data(nome_arquivo_plot, std::ios::out);
-    std::fstream ic_file("ic_data.txt", std::ios::out);
+    std::fstream ic_file(nome_arquivo_condicoes_iniciais, std::ios::out);
     // Criando as condições iniciais...
-    VectorXd chute_inicial(space_steps);
-    discretize_axis(chute_inicial);
-    general_initial_conditions(chute_inicial, 16.0, 0.0, -90.0);
+    VectorXd condicao_inicial(space_steps);
+    discretize_axis(condicao_inicial);
+    general_initial_conditions(condicao_inicial, 16.0, 0.0, -90.0);
     //Erro será o quão distante de zero as nossas "raizes" estão..
     //Neste caso será o quão distante está a raíz mais distante
     double erro = 500.0;
@@ -189,8 +195,8 @@ int main(){
     VectorXd raizes_tempo_t_mais_1(space_steps);
     VectorXd vetor_funcao_com_valores_chute(space_steps);
     VectorXd novo_chute(space_steps);
-    copia_vetor(chute_inicial, raizes_tempo_t, space_steps);
-    copia_vetor(chute_inicial, raizes_tempo_t_mais_1, space_steps);
+    copia_vetor(condicao_inicial, raizes_tempo_t, space_steps);
+    copia_vetor(condicao_inicial, raizes_tempo_t_mais_1, space_steps);
     int count = 0;
     Eigen::SparseMatrix<double> jacobiano(space_steps, space_steps);
     Eigen::IncompleteLUT<double> solver;
@@ -200,19 +206,22 @@ int main(){
     for (int i = 0; i < time_steps; i++){
         // Enquanto o erro é maior que 10⁻⁶
         while (abs(erro) > pow(10, -7) && count < 100){
+            // Calcula J e -F⁰
             calcula_jacobiano(raizes_tempo_t_mais_1, raizes_tempo_t, jacobiano);
             calcula_funcao_avaliada_chute(raizes_tempo_t_mais_1, raizes_tempo_t, vetor_funcao_com_valores_chute);
+            // Analizamos o padrão da matriz sem se importar com os valores numéricos (apenas na 1 iteracao de todas)
             if (i == 0) solver.analyzePattern(jacobiano);
-            //// Mudou os valores numericos entao tem que fatorar novamente
+            // Mudou os valores numericos entao temos que fatorar
             solver.factorize(jacobiano);
             if(solver.info() != Eigen::Success){
                 std::cout << "Erro fatoração, possívelmente matriz mal-construída.\n";
-                return -1;
+                return;
             }
+            // Resolvendo o sistema
             novo_chute = solver.solve(vetor_funcao_com_valores_chute) + raizes_tempo_t_mais_1;
             if(solver.info() != Eigen::Success){
                 std::cout << "Erro resolver sistema, possívelmente matriz mal-construída.\n";
-                return -1;
+                return;
             }
             copia_vetor(novo_chute, raizes_tempo_t_mais_1, space_steps);
             erro = valor_max_vetor(vetor_funcao_com_valores_chute, space_steps);
@@ -230,4 +239,29 @@ int main(){
         std::cout << "tempo: " << i << '\n';
     }
     file_kdv_data.close();
+}
+// Calculando massa
+void cria_arquivo_massa(){
+    std::fstream massa_file("massa.txt", std::ios::out);
+    double valor_massa = 0.0;
+    VectorXd kdv(space_steps);
+    std::ifstream kdv_data("kdv_data.txt", std::ios_base::in);
+    for (int i = 0; i < (time_steps / 100); i++){
+        for (int j = 0; j < space_steps; j++){
+            std::string val;
+            double val_funcao;
+            std::getline(kdv_data, val);
+            val_funcao = std::stod(val);
+            kdv[j] = val_funcao;
+        }
+        valor_massa = mass_conservation(kdv);
+        massa_file << std::scientific << valor_massa << std::endl;
+    }
+    
+    massa_file.close();
+    kdv_data.close();
+}
+int main(){
+    roda_simulacao_crank_nicholson();
+    cria_arquivo_massa();
 }
