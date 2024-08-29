@@ -3,7 +3,7 @@ images_kdv/
 images_kdv_1_soliton_crank_nicholson/
 .vscode/
 .vscode/*
-
+images/*
 *.txt
 
 *.out
