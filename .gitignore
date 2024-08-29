@@ -5,5 +5,5 @@ images_kdv_1_soliton_crank_nicholson/
 .vscode/*
 images/*
 *.txt
-massa.png
+*.png
 *.out
