@@ -7,3 +7,4 @@ images/*
 *.txt
 *.png
 *.out
+!README_images/
