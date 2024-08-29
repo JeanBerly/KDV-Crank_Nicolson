@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
+plt.rcParams['axes.formatter.useoffset'] = False
 mass = []
 x = []
 x = np.linspace(0, 40, 1000)

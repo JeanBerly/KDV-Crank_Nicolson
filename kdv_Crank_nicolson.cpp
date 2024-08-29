@@ -28,7 +28,6 @@ void general_initial_conditions(VectorXd& ic, double c, double t, double x0) // 
         ic[i] = c / (2.0 * aux * aux);
     }
 }
-
 void soliton_initial_conditions(VectorXd& ic, int n)
 {
     double aux;
@@ -39,7 +38,8 @@ void soliton_initial_conditions(VectorXd& ic, int n)
         ic[i] = (double)(n) * (n + 1.0) / (aux * aux);
     }
 }
-
+// Discretiza o eixo
+//@param x eixo a ser discretizado
 void discretize_axis(VectorXd& x) // ta ok
 {
     int i = 0;
@@ -55,10 +55,13 @@ void discretize_axis(VectorXd& x) // ta ok
     // }
 }
 
-// Procedimento que calcula a combinação linear de dois vetores.
-// No momento só funciona para esse caso específico, mas pode ser
-// facilmente portada.
-void linear_combination(double alpha, double *v1, double beta, double *v2, double *combination)
+// Procedimento que calcula a combinação linear de dois vetores, c = alpha*v1 + beta*v2
+//@param alpha coeficiente da C.L do 1 vetor
+//@param v1 primeiro vetor da C.L
+//@param beta coeficiente da C.L do 2 vetor
+//@param v2 segundo vetor da C.L
+//@param combination vetor resultado da C.L
+void linear_combination(double alpha, VectorXd& v1, double beta, VectorXd& v2, VectorXd& combination)
 {
     for (int i = 0; i < space_steps; i++)
     {
@@ -74,11 +77,11 @@ double mass_conservation(VectorXd& x)
     // Tiramos a raiz quadrada e retornamos
     double sum = 0.0;
     sum += pow(x[0], 2.0);
-    for (int i = 1; i < space_steps - 2; i++)
+    for (int i = 1; i < space_steps - 1; i++)
     {
         sum += 2 * pow(x[i], 2.0);
     }
-    sum += pow(x[space_steps - 1], 2);
+    sum += pow(x[space_steps - 1], 2.0);
     sum *= dx / 2;
     return sqrt(sum);
 }
@@ -187,8 +190,13 @@ void roda_simulacao_crank_nicolson(){
     std::fstream ic_file(nome_arquivo_condicoes_iniciais, std::ios::out);
     // Criando as condições iniciais...
     VectorXd condicao_inicial(space_steps);
+    VectorXd condicao_inicial_soliton_2(space_steps);
+    VectorXd condicao_inicial_solitons_juntos(space_steps);
     discretize_axis(condicao_inicial);
+    discretize_axis(condicao_inicial_soliton_2);
     general_initial_conditions(condicao_inicial, 16.0, 0.0, -90.0);
+    general_initial_conditions(condicao_inicial_soliton_2, 10, 0.0, -70);
+    linear_combination(1, condicao_inicial, 1, condicao_inicial_soliton_2, condicao_inicial_solitons_juntos);
     //Erro será o quão distante de zero as nossas "raizes" estão..
     //Neste caso será o quão distante está a raíz mais distante
     double erro = 500.0;
@@ -196,8 +204,8 @@ void roda_simulacao_crank_nicolson(){
     VectorXd raizes_tempo_t_mais_1(space_steps);
     VectorXd vetor_funcao_com_valores_chute(space_steps);
     VectorXd novo_chute(space_steps);
-    copia_vetor(condicao_inicial, raizes_tempo_t, space_steps);
-    copia_vetor(condicao_inicial, raizes_tempo_t_mais_1, space_steps);
+    copia_vetor(condicao_inicial_solitons_juntos, raizes_tempo_t, space_steps);
+    copia_vetor(condicao_inicial_solitons_juntos, raizes_tempo_t_mais_1, space_steps);
     int count = 0;
     Eigen::SparseMatrix<double> jacobiano(space_steps, space_steps);
     Eigen::IncompleteLUT<double> solver;
@@ -228,7 +236,7 @@ void roda_simulacao_crank_nicolson(){
             erro = valor_max_vetor(vetor_funcao_com_valores_chute, space_steps);
             count++;
         }
-        std::cout << count << " iterações do newton para precisao 10⁻⁶\n";
+        std::cout << count << " iterações do newton para precisao 10⁻⁷\n";
         // Escrevendo no arquivo
         if ((i % 100) == 0){
             for (int j = 0; j < space_steps; j++) file_kdv_data << raizes_tempo_t_mais_1[j] << std::endl;
