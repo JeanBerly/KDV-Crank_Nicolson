@@ -3,10 +3,10 @@ import matplotlib.pyplot as plt
 plt.rcParams['axes.formatter.useoffset'] = False
 mass = []
 x = []
-x = np.linspace(0, 40, 1000)
+x = np.linspace(0, 20, 500)
 m = open('massa.txt', 'r')
-mass_data = m.readlines()[0:1000]
-for i in range(1000):
+mass_data = m.readlines()[0:500]
+for i in range(500):
     mass.append(float(mass_data[i]))
 
 plt.title("Variação da massa:")

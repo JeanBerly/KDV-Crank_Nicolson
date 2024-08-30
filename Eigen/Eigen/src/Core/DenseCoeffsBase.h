@@ -6,7 +6,7 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-
+extern const bool periodico;
 #ifndef EIGEN_DENSECOEFFSBASE_H
 #define EIGEN_DENSECOEFFSBASE_H
 
@@ -405,6 +405,15 @@ class DenseCoeffsBase<Derived, WriteAccessors> : public DenseCoeffsBase<Derived,
     EIGEN_STRONG_INLINE Scalar&
     operator[](Index index)
     {
+      if(periodico){
+        if (index < 0){
+          return coeffRef(size() + index);
+        }
+        if (index >= size()){
+          return coeffRef(index % size());
+        }
+        return coeffRef(index);
+      }
       EIGEN_STATIC_ASSERT(Derived::IsVectorAtCompileTime,
                           THE_BRACKET_OPERATOR_IS_ONLY_FOR_VECTORS__USE_THE_PARENTHESIS_OPERATOR_INSTEAD)
       eigen_assert(index >= 0 && index < size());

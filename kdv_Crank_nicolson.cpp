@@ -10,9 +10,11 @@
 #include<Eigen/IterativeLinearSolvers>
 #define EIGEN_MPL2_ONLY
 using Eigen::VectorXd;
+extern const bool periodico = true;
 // config tá ok
 const int space_steps = 2001;                             // número de passos no espaço
-const int time_steps = 100000;                            // número de passos no tempo
+//const int time_steps = 100000;                            // número de passos no tempo
+const int time_steps = 50000;                            // número de passos no tempo
 const double x_init = -100.0;                             // início do intervalo no espaço
 const double x_final = 0.0;                               // fim do intervalo no espaço
 const double dx = (x_final - x_init) / (space_steps - 1); // incremento espaço
@@ -104,6 +106,16 @@ double derivada_diferenca_centrada(VectorXd& valor_variaveis, int indice){
 //@param jacobiano matriz que representa o jacobiano
 void calcula_jacobiano(VectorXd& valor_variaveis_t_mais_1, VectorXd& valor_variaveis_t, Eigen::SparseMatrix<double>& jacobiano){
     double pow_dx_3 = pow(dx,3);
+    if (periodico){
+        for (int m = 0; m < space_steps; m++){
+            if (m >= 2) jacobiano.coeffRef(m,m-2) = -1/(4*pow_dx_3);
+            if (m >= 1) jacobiano.coeffRef(m,m-1) = -(1/4*dx)*(2*valor_variaveis_t_mais_1[m-1]+2*valor_variaveis_t[m-1]-valor_variaveis_t_mais_1[m]-valor_variaveis_t[m]) + (1/(2*pow_dx_3));
+            jacobiano.coeffRef(m,m) = 1/dt + (1/4*dx)*(valor_variaveis_t_mais_1[m+1] + valor_variaveis_t[m+1] - valor_variaveis_t_mais_1[m-1] - valor_variaveis_t[m-1]);
+            if (m <= space_steps - 2) jacobiano.coeffRef(m,m+1) = (1/4*dx)*(2*valor_variaveis_t_mais_1[m+1]+2*valor_variaveis_t[m+1]+valor_variaveis_t_mais_1[m]+valor_variaveis_t[m]) - (1/(2*pow_dx_3));
+            if (m <= space_steps - 3) jacobiano.coeffRef(m,m+2) = 1/(4*pow_dx_3);
+        }
+        return;
+    }
     // m-1 e m-2 fora do dominio, entao nem mechemos nele
     int m = 0;
     jacobiano.coeffRef(m,m) = 1/dt + (1/4*dx)*(valor_variaveis_t_mais_1[m+1] + valor_variaveis_t[m+1] - 0 - 0);
@@ -143,6 +155,16 @@ void calcula_jacobiano(VectorXd& valor_variaveis_t_mais_1, VectorXd& valor_varia
 //@param valor_variaveis_t raizes que achamos no tempo anterior
 //@param vetor que representa o F⁰
 void calcula_funcao_avaliada_chute(VectorXd& valor_variaveis_t_mais_1, VectorXd& valor_variaveis_t, VectorXd& vetor_resultado){
+    if (periodico){
+        for (int m = 0; m < space_steps; m++){
+            vetor_resultado[m] = ((valor_variaveis_t_mais_1[m]-valor_variaveis_t[m])/dt);
+            vetor_resultado[m] += (1/(4*dx))*(valor_variaveis_t_mais_1[m+1] + valor_variaveis_t[m+1] + valor_variaveis_t_mais_1[m] + valor_variaveis_t[m]+valor_variaveis_t_mais_1[m-1]+valor_variaveis_t[m-1])
+                                * (valor_variaveis_t_mais_1[m+1]+valor_variaveis_t[m+1]-valor_variaveis_t_mais_1[m-1]-valor_variaveis_t[m-1]);
+            vetor_resultado[m] += (1/(4*pow(dx, 3)))*(valor_variaveis_t_mais_1[m+2]+valor_variaveis_t[m+2]-2*(valor_variaveis_t_mais_1[m+1]+valor_variaveis_t[m+1])+2*(valor_variaveis_t_mais_1[m-1]+valor_variaveis_t[m-1])-valor_variaveis_t_mais_1[m-2]-valor_variaveis_t[m-2]);
+            vetor_resultado[m] *= -1.0;
+        }
+        return;
+    }
     int m = 0;
     // u_t
     vetor_resultado[m] = ((valor_variaveis_t_mais_1[m]-valor_variaveis_t[m])/dt);
@@ -191,12 +213,12 @@ void roda_simulacao_crank_nicolson(){
     // Criando as condições iniciais...
     VectorXd condicao_inicial(space_steps);
     VectorXd condicao_inicial_soliton_2(space_steps);
-    VectorXd condicao_inicial_solitons_juntos(space_steps);
+    //VectorXd condicao_inicial_solitons_juntos(space_steps);
     discretize_axis(condicao_inicial);
-    discretize_axis(condicao_inicial_soliton_2);
-    general_initial_conditions(condicao_inicial, 16.0, 0.0, -90.0);
-    general_initial_conditions(condicao_inicial_soliton_2, 10, 0.0, -70);
-    linear_combination(1, condicao_inicial, 1, condicao_inicial_soliton_2, condicao_inicial_solitons_juntos);
+    //discretize_axis(condicao_inicial_soliton_2);
+    general_initial_conditions(condicao_inicial, 16.0, 0.0, -30.0);
+    //general_initial_conditions(condicao_inicial_soliton_2, 10, 0.0, -70);
+    //linear_combination(1, condicao_inicial, 1, condicao_inicial_soliton_2, condicao_inicial_solitons_juntos);
     //Erro será o quão distante de zero as nossas "raizes" estão..
     //Neste caso será o quão distante está a raíz mais distante
     double erro = 500.0;
@@ -204,8 +226,8 @@ void roda_simulacao_crank_nicolson(){
     VectorXd raizes_tempo_t_mais_1(space_steps);
     VectorXd vetor_funcao_com_valores_chute(space_steps);
     VectorXd novo_chute(space_steps);
-    copia_vetor(condicao_inicial_solitons_juntos, raizes_tempo_t, space_steps);
-    copia_vetor(condicao_inicial_solitons_juntos, raizes_tempo_t_mais_1, space_steps);
+    copia_vetor(condicao_inicial, raizes_tempo_t, space_steps);
+    copia_vetor(condicao_inicial, raizes_tempo_t_mais_1, space_steps);
     int count = 0;
     Eigen::SparseMatrix<double> jacobiano(space_steps, space_steps);
     Eigen::IncompleteLUT<double> solver;
