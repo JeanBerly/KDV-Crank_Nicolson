@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FormatStrFormatter
 plt.rcParams['axes.formatter.useoffset'] = False
 mass = []
 x = []
@@ -12,6 +13,7 @@ for i in range(500):
 plt.title("Variação da massa:")
 plt.xlabel("tempo (s)")
 plt.ylabel("massa")
+plt.gca().yaxis.set_major_formatter(FormatStrFormatter('%.7f'))
 # plt.xlim(-100, 0)
 # plt.ylim(-5, 15)
 plt.plot(x, mass)

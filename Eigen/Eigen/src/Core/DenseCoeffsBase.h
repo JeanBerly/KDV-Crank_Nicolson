@@ -158,6 +158,15 @@ class DenseCoeffsBase<Derived,ReadOnlyAccessors> : public EigenBase<Derived>
     EIGEN_STRONG_INLINE CoeffReturnType
     operator[](Index index) const
     {
+      if(periodico){
+        if (index < 0){
+          return coeff(size() + index);
+        }
+        if (index >= size()){
+          return coeff(index % size());
+        }
+        return coeff(index);
+      }
       EIGEN_STATIC_ASSERT(Derived::IsVectorAtCompileTime,
                           THE_BRACKET_OPERATOR_IS_ONLY_FOR_VECTORS__USE_THE_PARENTHESIS_OPERATOR_INSTEAD)
       eigen_assert(index >= 0 && index < size());

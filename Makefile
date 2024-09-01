@@ -1,6 +1,6 @@
 # Define the compiler and flags
 CXX = g++
-CXXFLAGS = -I ./Eigen/
+CXXFLAGS = -g -I ./Eigen/
 
 # Define the source file and output binary
 SRC = kdv_Crank_nicolson.cpp

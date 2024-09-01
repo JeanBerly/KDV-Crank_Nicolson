@@ -63,7 +63,7 @@ void discretize_axis(VectorXd& x) // ta ok
 //@param beta coeficiente da C.L do 2 vetor
 //@param v2 segundo vetor da C.L
 //@param combination vetor resultado da C.L
-void linear_combination(double alpha, VectorXd& v1, double beta, VectorXd& v2, VectorXd& combination)
+void linear_combination(double alpha, const VectorXd& v1, double beta, const VectorXd& v2, VectorXd& combination)
 {
     for (int i = 0; i < space_steps; i++)
     {
@@ -71,7 +71,7 @@ void linear_combination(double alpha, VectorXd& v1, double beta, VectorXd& v2, V
     }
 }
 // Norma L2 da função
-double mass_conservation(VectorXd& x)
+double mass_conservation(const VectorXd& x)
 {
     // Queremos calcular a raiz quadrada da integral de f(x)², no devido intervalo de integração
     // Usando f(x)² = x[i]² = g(x) e aplicando o método dos trapezios
@@ -104,7 +104,7 @@ double derivada_diferenca_centrada(VectorXd& valor_variaveis, int indice){
 //@param valor_variaveis_t_mais_1 chute do valor das raizes que atualiza a cada iteracao
 //@param valor_variaveis_t raizes que achamos no tempo anterior
 //@param jacobiano matriz que representa o jacobiano
-void calcula_jacobiano(VectorXd& valor_variaveis_t_mais_1, VectorXd& valor_variaveis_t, Eigen::SparseMatrix<double>& jacobiano){
+void calcula_jacobiano(const VectorXd& valor_variaveis_t_mais_1, const VectorXd& valor_variaveis_t, Eigen::SparseMatrix<double>& jacobiano){
     double pow_dx_3 = pow(dx,3);
     if (periodico){
         for (int m = 0; m < space_steps; m++){
@@ -154,7 +154,7 @@ void calcula_jacobiano(VectorXd& valor_variaveis_t_mais_1, VectorXd& valor_varia
 //@param valor_variaveis_t_mais_1 chute do valor das raizes que atualiza a cada iteracao
 //@param valor_variaveis_t raizes que achamos no tempo anterior
 //@param vetor que representa o F⁰
-void calcula_funcao_avaliada_chute(VectorXd& valor_variaveis_t_mais_1, VectorXd& valor_variaveis_t, VectorXd& vetor_resultado){
+void calcula_funcao_avaliada_chute(const VectorXd& valor_variaveis_t_mais_1, const VectorXd& valor_variaveis_t, VectorXd& vetor_resultado){
     if (periodico){
         for (int m = 0; m < space_steps; m++){
             vetor_resultado[m] = ((valor_variaveis_t_mais_1[m]-valor_variaveis_t[m])/dt);
@@ -212,7 +212,7 @@ void roda_simulacao_crank_nicolson(){
     std::fstream ic_file(nome_arquivo_condicoes_iniciais, std::ios::out);
     // Criando as condições iniciais...
     VectorXd condicao_inicial(space_steps);
-    VectorXd condicao_inicial_soliton_2(space_steps);
+    //VectorXd condicao_inicial_soliton_2(space_steps);
     //VectorXd condicao_inicial_solitons_juntos(space_steps);
     discretize_axis(condicao_inicial);
     //discretize_axis(condicao_inicial_soliton_2);
@@ -232,10 +232,12 @@ void roda_simulacao_crank_nicolson(){
     Eigen::SparseMatrix<double> jacobiano(space_steps, space_steps);
     Eigen::IncompleteLUT<double> solver;
     jacobiano.reserve(Eigen::VectorXi::Constant(space_steps, 5));
+    // Escrevendo condições iniciais (t = 0) no arquivo
     for (int j = 0; j < space_steps; j++) ic_file << raizes_tempo_t[j] << std::endl;
     ic_file.close();
+    // Calculando valor da função no t = 1, t = 2, ..., t = time_steps
     for (int i = 0; i < time_steps; i++){
-        // Enquanto o erro é maior que 10⁻⁶
+        // Enquanto o erro é maior que 10⁻⁷
         while (abs(erro) > pow(10, -7) && count < 100){
             // Calcula J e -F⁰
             calcula_jacobiano(raizes_tempo_t_mais_1, raizes_tempo_t, jacobiano);
@@ -258,7 +260,7 @@ void roda_simulacao_crank_nicolson(){
             erro = valor_max_vetor(vetor_funcao_com_valores_chute, space_steps);
             count++;
         }
-        std::cout << count << " iterações do newton para precisao 10⁻⁷\n";
+        std::cout << count << "iterações do newton para precisao 10⁻⁷\n";
         // Escrevendo no arquivo
         if ((i % 100) == 0){
             for (int j = 0; j < space_steps; j++) file_kdv_data << raizes_tempo_t_mais_1[j] << std::endl;
